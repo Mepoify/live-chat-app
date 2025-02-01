@@ -1,0 +1,226 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Live Chat App - Multiple Rooms</title>
+    <style>
+      /* Default (light mode) styles */
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background: #f0f0f0;
+        color: #333;
+        transition: background 0.3s, color 0.3s;
+      }
+      #chat-container {
+        width: 90%;
+        max-width: 800px;
+        margin: 2em auto;
+        background: #fff;
+        border-radius: 8px;
+        padding: 1em;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        transition: background 0.3s, box-shadow 0.3s;
+        position: relative;
+      }
+      ul {
+        list-style-type: none;
+        padding: 0;
+        height: 300px;
+        overflow-y: scroll;
+        border: 1px solid #ddd;
+        margin-bottom: 1em;
+      }
+      li {
+        padding: 0.5em;
+        border-bottom: 1px solid #eee;
+      }
+      form {
+        display: flex;
+      }
+      input {
+        flex: 1;
+        padding: 0.5em;
+        font-size: 1em;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+      button.send-btn {
+        padding: 0.5em 1em;
+        font-size: 1em;
+        margin-left: 0.5em;
+        border: none;
+        background: #28a745;
+        color: white;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      button.send-btn:hover {
+        background: #218838;
+      }
+
+      /* Toggle switch container */
+      .toggle-switch {
+        position: absolute;
+        left: -80px; /* Moves sidebar outside the chat */
+        width: 80px;
+      }
+      /* Hide the default checkbox */
+      .toggle-switch input {
+        display: none;
+      }
+      /* The slider */
+      .toggle-switch label {
+        display: block;
+        width: 50px;
+        height: 26px;
+        background: #ccc;
+        border-radius: 50px;
+        position: relative;
+        cursor: pointer;
+        transition: background 0.3s;
+      }
+      .toggle-switch label::after {
+        content: "";
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 22px;
+        height: 22px;
+        background: #fff;
+        border-radius: 50%;
+        transition: transform 0.3s;
+      }
+      /* When checked, change the background and move the slider */
+      .toggle-switch input:checked + label {
+        background: #007bff;
+      }
+      .toggle-switch input:checked + label::after {
+        transform: translateX(24px);
+      }
+
+      /* Dark mode overrides */
+      body.dark-mode {
+        background: #1e1e1e;
+        color: #ddd;
+      }
+      body.dark-mode #chat-container {
+        background: #2c2c2c;
+        box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      }
+      body.dark-mode ul {
+        border: 1px solid #444;
+      }
+      body.dark-mode li {
+        border-bottom: 1px solid #555;
+      }
+      body.dark-mode input {
+        border: 1px solid #555;
+        background: #444;
+        color: #ddd;
+      }
+      body.dark-mode button.send-btn {
+        background: #007bff;
+
+      }
+
+      /* Positioning emojis on either side of the slider */
+      #moon-icon, #sun-icon {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 18px;
+        transition: opacity 0.3s;
+      }
+
+      #moon-icon {
+        left: 0;
+        opacity: 1;
+      }
+
+      #sun-icon {
+        right: 0;
+        opacity: 1;
+      }
+
+      body.dark-mode .toggle-switch label {
+        background: #444;
+      }
+
+      body.dark-mode #moon-icon {
+        opacity: 1;
+      }
+
+      body.dark-mode #sun-icon {
+        opacity: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="chat-container">
+      <!-- Toggle switch for theme -->
+      <div class="toggle-switch">
+        <input type="checkbox" id="toggle-theme" />
+        <label for="toggle-theme">
+          <span id="moon-icon">🌙</span>
+          <span id="sun-icon">☀️</span>
+        </label>
+      </div>
+      
+      
+      <ul id="messages"></ul>
+      <form id="form">
+        <input id="input" autocomplete="off" placeholder="Type your message here..." />
+        <button type="submit" class="send-btn">Send</button>
+      </form>
+    </div>
+
+    <!-- Include Socket.io client script -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const socket = io();
+
+      // Prompt for nickname and room
+      let nickname = '';
+      while (!nickname) {
+        nickname = prompt('Enter your nickname:').trim();
+      }
+      socket.emit('set nickname', nickname);
+
+      let room = '';
+      while (!room) {
+        room = prompt('Enter the chat room name:').trim();
+      }
+      socket.emit('join room', room);
+
+      const form = document.getElementById('form');
+      const input = document.getElementById('input');
+      const messages = document.getElementById('messages');
+      const toggleThemeCheckbox = document.getElementById('toggle-theme');
+
+      // Toggle dark mode/light mode using the checkbox
+      toggleThemeCheckbox.addEventListener('change', () => {
+        document.body.classList.toggle('dark-mode', toggleThemeCheckbox.checked);
+      });
+
+      // When the form is submitted, send the message to the server
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (input.value.trim() !== '') {
+          socket.emit('chat message', input.value);
+          input.value = '';
+        }
+      });
+
+      // Listen for incoming messages and add them to the list
+      socket.on('chat message', (msg) => {
+        const li = document.createElement('li');
+        li.textContent = msg;
+        messages.appendChild(li);
+        // Scroll to the bottom when a new message arrives
+        messages.scrollTop = messages.scrollHeight;
+      });
+
+    </script>
+  </body>
+</html>
